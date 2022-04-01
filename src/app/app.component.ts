@@ -1,0 +1,64 @@
+import {
+	ElementRef,
+	ViewChild,
+	Component,
+	ChangeDetectionStrategy,
+	AfterViewInit,
+	ChangeDetectorRef
+} from '@angular/core';
+import { DataService, Human } from '../data.service';
+import { Observable } from 'rxjs';
+import { Grid, GridModel } from 'ng2-qgrid';
+
+const EXAMPLE_TAGS = ['mouse-api-basic', 'Mouse api example'];
+
+@Component({
+	selector: 'my-app',
+	templateUrl: 'app.component.html',
+	styleUrls: ['app.component.css'],
+	providers: [DataService],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AppComponent implements AfterViewInit {
+
+	static id = EXAMPLE_TAGS[0];
+
+	logEntries: Array<LogEntry> = [];
+	title = EXAMPLE_TAGS[1];
+	rows: Observable<Human[]>;
+	gridModel: GridModel;
+
+	constructor(
+		dataService: DataService,
+		private cdr: ChangeDetectorRef,
+		private qgrid: Grid
+	) {
+		this.gridModel = qgrid.model();
+		this.rows = dataService.getPeople();
+	}
+
+	ngAfterViewInit(): void {
+		this.gridModel.mouseChanged.on(({ state }) => {
+			const { status, target, code } = state;
+			let targetString = '';
+			if (target) {
+				const { columnIndex, rowIndex } = target;
+				targetString = `{ column: ${columnIndex}, row: ${rowIndex} }`;
+			}
+
+			this.logEntries.unshift({
+				status: status,
+				code: code,
+				target: targetString
+			});
+
+			this.cdr.detectChanges();
+		});
+	}
+}
+
+export declare class LogEntry {
+	status: string;
+	code: string;
+	target: string;
+}
